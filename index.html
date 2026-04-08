@@ -186,11 +186,11 @@
         <div class="form-row">
           <div class="form-field">
             <label>Horário início</label>
-            <select id="fStart"></select>
+            <input type="text" id="fStart" placeholder="ex: 14:00">
           </div>
           <div class="form-field">
             <label>Horário fim</label>
-            <select id="fEnd"></select>
+            <input type="text" id="fEnd" placeholder="ex: 15:30">
           </div>
         </div>
         <div class="form-actions">
@@ -653,28 +653,41 @@ function buildDayFilterTabs() {
 }
 
 function populateTimeSelects() {
-  ['fStart','fEnd'].forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = TIME_SLOTS.map(t=>`<option value="${t}">${t}</option>`).join('');
-  });
   document.getElementById('fStart').value = '14:00';
   document.getElementById('fEnd').value = '15:00';
 }
 
 function getStudentKey(name, day) { return `${day}::${name}`; }
 
+// Assign stable numeric _id to every student on first access
+let _nextId = 1;
+function ensureIds() {
+  Object.values(SCHEDULE).forEach(arr => {
+    arr.forEach(s => { if (!s._id) s._id = _nextId++; });
+  });
+}
+
 function getAllStudents() {
-  // Returns flat list: {key, name, day, discipline, start, end}
+  ensureIds();
   const list = [];
   Object.entries(SCHEDULE).forEach(([day, students]) => {
     students.forEach(s => {
-      list.push({ key: getStudentKey(s.name, day), name: s.name, day, discipline: s.discipline, start: s.start, end: s.end });
+      list.push({ id: s._id, name: s.name, day, discipline: s.discipline, start: s.start, end: s.end });
     });
   });
   return list;
 }
 
+function findById(id) {
+  for (const [day, arr] of Object.entries(SCHEDULE)) {
+    const idx = arr.findIndex(s => s._id === id);
+    if (idx !== -1) return { day, arr, idx, s: arr[idx] };
+  }
+  return null;
+}
+
 function renderStudentList() {
+  ensureIds();
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   let students = getAllStudents();
   if (manageDayFilter) students = students.filter(s => s.day === manageDayFilter);
@@ -684,12 +697,12 @@ function renderStudentList() {
   document.getElementById('studentCount').textContent = `${students.length} alunos`;
   const list = document.getElementById('studentList');
   if (!students.length) { list.innerHTML = '<div class="empty-list">Nenhum aluno encontrado.</div>'; return; }
-  const dc = {Matemática:'mat',Português:'por',Inglês:'ing',};
+  const dc = {Matemática:'mat',Português:'por',Inglês:'ing'};
   list.innerHTML = students.map(s => {
-    const sel = s.key === selectedStudentKey ? 'selected' : '';
+    const sel = s.id === selectedStudentKey ? 'selected' : '';
     const bc = dc[s.discipline] || 'nd';
     const ts = s.start === s.end ? s.start : `${s.start}–${s.end}`;
-    return `<div class="student-list-item ${sel}" onclick="selectStudent('${s.key.replace(/'/g,"\\'")}')">
+    return `<div class="student-list-item ${sel}" onclick="selectStudent(${s.id})">
       <div style="flex:1;min-width:0">
         <div class="sli-name">${s.name}</div>
         <div style="display:flex;gap:6px;margin-top:3px;align-items:center;">
@@ -702,14 +715,14 @@ function renderStudentList() {
   }).join('');
 }
 
-function selectStudent(key) {
-  selectedStudentKey = key;
-  const all = getAllStudents();
-  const s = all.find(x => x.key === key);
-  if (!s) return;
-  document.getElementById('editingKey').value = key;
+function selectStudent(id) {
+  selectedStudentKey = id;
+  const found = findById(id);
+  if (!found) return;
+  const s = found.s;
+  document.getElementById('editingKey').value = id;
   document.getElementById('fName').value = s.name;
-  document.getElementById('fDay').value = s.day;
+  document.getElementById('fDay').value = found.day;
   document.getElementById('fDisc').value = s.discipline;
   document.getElementById('fStart').value = s.start;
   document.getElementById('fEnd').value = s.end;
@@ -738,52 +751,45 @@ function saveStudent() {
   if (!name) { showFormMsg('Digite o nome do aluno.', 'error'); return; }
   const day = document.getElementById('fDay').value;
   const disc = document.getElementById('fDisc').value;
-  const start = document.getElementById('fStart').value;
-  const end = document.getElementById('fEnd').value;
-  if (start > end) { showFormMsg('O horário de início deve ser antes do fim.', 'error'); return; }
+  const start = document.getElementById('fStart').value.trim() || '—';
+  const end = document.getElementById('fEnd').value.trim() || '—';
 
-  const editKey = document.getElementById('editingKey').value;
+  const editId = parseInt(document.getElementById('editingKey').value);
 
-  if (editKey) {
-    // Edit existing: find and update in SCHEDULE
-    const [editDay, editName] = editKey.split('::');
-    const arr = SCHEDULE[editDay];
-    const idx = arr.findIndex(s => s.name === editName);
-    if (idx !== -1) {
-      if (editDay !== day) {
-        // Moving to different day
-        arr.splice(idx, 1);
-        SCHEDULE[day].push({name, discipline: disc, start, end});
+  if (editId) {
+    const found = findById(editId);
+    if (found) {
+      if (found.day !== day) {
+        found.arr.splice(found.idx, 1);
+        SCHEDULE[day].push({_id: editId, name, discipline: disc, start, end});
       } else {
-        arr[idx] = {name, discipline: disc, start, end};
+        found.arr[found.idx] = {_id: editId, name, discipline: disc, start, end};
       }
     }
     showFormMsg('Aluno atualizado com sucesso!', 'success');
-    selectedStudentKey = getStudentKey(name, day);
-    document.getElementById('editingKey').value = selectedStudentKey;
+    selectedStudentKey = editId;
   } else {
-    SCHEDULE[day].push({name, discipline: disc, start, end});
+    const newId = _nextId++;
+    SCHEDULE[day].push({_id: newId, name, discipline: disc, start, end});
     showFormMsg('Aluno adicionado!', 'success');
-    selectedStudentKey = getStudentKey(name, day);
-    document.getElementById('editingKey').value = selectedStudentKey;
+    selectedStudentKey = newId;
+    document.getElementById('editingKey').value = newId;
     document.getElementById('formTitle').textContent = 'Editar aluno';
     document.getElementById('btnDelete').style.display = 'inline-block';
   }
 
   renderStudentList();
-  // Refresh chamada if visible
   if (currentDay) { populateTimeFilter(); renderStudents(); updateStats(); }
   showToast('✓ Aluno salvo!');
 }
 
 function deleteStudent() {
-  const key = document.getElementById('editingKey').value;
-  if (!key) return;
-  const [day, name] = key.split('::');
-  if (!confirm(`Excluir ${name} de ${day}?`)) return;
-  const arr = SCHEDULE[day];
-  const idx = arr.findIndex(s => s.name === name);
-  if (idx !== -1) arr.splice(idx, 1);
+  const editId = parseInt(document.getElementById('editingKey').value);
+  if (!editId) return;
+  const found = findById(editId);
+  if (!found) return;
+  if (!confirm(`Excluir ${found.s.name} de ${found.day}?`)) return;
+  found.arr.splice(found.idx, 1);
   clearForm();
   renderStudentList();
   if (currentDay) { populateTimeFilter(); renderStudents(); updateStats(); }
