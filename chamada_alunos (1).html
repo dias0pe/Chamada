@@ -761,15 +761,6 @@ function saveStudent() {
     showFormMsg('Aluno atualizado com sucesso!', 'success');
     selectedStudentKey = getStudentKey(name, day);
     document.getElementById('editingKey').value = selectedStudentKey;
-  } else {
-    // New student: check duplicate
-    if (SCHEDULE[day].find(s => s.name === name)) { showFormMsg('Já existe um aluno com esse nome neste dia.', 'error'); return; }
-    SCHEDULE[day].push({name, discipline: disc, start, end});
-    showFormMsg('Aluno adicionado!', 'success');
-    selectedStudentKey = getStudentKey(name, day);
-    document.getElementById('editingKey').value = selectedStudentKey;
-    document.getElementById('formTitle').textContent = 'Editar aluno';
-    document.getElementById('btnDelete').style.display = 'inline-block';
   }
 
   renderStudentList();
