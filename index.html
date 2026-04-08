@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamada dos Alunos</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8; --paper: #fffdf8; --ink: #1a1208; --muted: #6b5e45;
+    --border: #d4c9b0; --present: #2d6a3f; --absent: #a83232;
+    --present-bg: #e8f5ec; --absent-bg: #faeaea; --accent: #c0862b; --accent-light: #f5e6c8;
+    --mat: #4472C4; --mat-bg: #e8eef8; --por: #c06010; --por-bg: #fdf0e5;
+    --ing: #C00000; --ing-bg: #fce8e8; --nd: #888; --nd-bg: #f2f2f2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23c0a87a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  header { background: var(--ink); color: var(--bg); padding: 16px 40px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 24px rgba(26,18,8,0.18); }
+  header h1 { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; margin-right: auto; }
+  .nav-btn { background: none; border: 1.5px solid rgba(255,255,255,0.2); color: var(--bg); border-radius: 8px; padding: 7px 16px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .nav-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+  .nav-btn.nav-active { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.5); }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  /* Manage screen */
+  .manage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 760px) { .manage-grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--paper); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .panel-header { background: var(--ink); color: var(--bg); padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .panel-header h3 { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; }
+  .panel-body { padding: 16px 18px; }
+  .form-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .form-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 500; }
+  .form-field input[type="text"], .form-field select { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 13px; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: var(--ink); outline: none; transition: border-color 0.2s; }
+  .form-field input[type="text"]:focus, .form-field select:focus { border-color: var(--accent); background: var(--paper); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .student-list-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px; transition: background 0.12s; cursor: pointer; border: 1.5px solid transparent; }
+  .student-list-item:hover { background: var(--bg); }
+  .student-list-item.selected { background: var(--accent-light); border-color: #e0c990; }
+  .sli-name { font-weight: 500; font-size: 0.92rem; flex: 1; }
+  .sli-disc { font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; flex-shrink: 0; }
+  .sli-time { font-size: 0.75rem; color: var(--muted); }
+  .sli-day { font-size: 0.72rem; color: var(--muted); background: var(--bg); border-radius: 5px; padding: 2px 6px; }
+  .student-list-scroll { max-height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+  .search-input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 13px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink); outline: none; margin-bottom: 12px; }
+  .search-input:focus { border-color: var(--accent); background: var(--paper); }
+  .day-filter-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .dft { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--paper); font-size: 0.75rem; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.12s; }
+  .dft:hover { color: var(--ink); }
+  .dft.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .form-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-success { background: var(--present-bg); color: var(--present); border: 1.5px solid #b5d9bf; }
+  .btn-success:hover { background: var(--present); color: white; }
+  .empty-list { text-align: center; padding: 32px 16px; color: var(--muted); font-family: 'Fraunces', serif; font-style: italic; font-size: 0.95rem; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+  .controls { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: flex-end; }
+  .cg { display: flex; flex-direction: column; gap: 5px; }
+  .cg label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); font-weight: 500; }
+  select, input[type="date"] { background: var(--paper); border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 13px; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; color: var(--ink); cursor: pointer; outline: none; transition: border-color 0.2s; }
+  select:focus, input[type="date"]:focus { border-color: var(--accent); }
+  .btn { padding: 9px 20px; border-radius: 8px; border: none; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--ink); color: var(--bg); }
+  .btn-primary:hover { background: #3a2e1a; }
+  .btn-secondary { background: var(--paper); color: var(--ink); border: 1.5px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .btn-danger { background: var(--absent-bg); color: var(--absent); border: 1.5px solid #e8b4b4; font-size: 0.78rem; padding: 5px 10px; }
+  .day-tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 2px solid var(--border); overflow-x: auto; }
+  .day-tab { padding: 9px 18px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+  .day-tab:hover { color: var(--ink); }
+  .day-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .date-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-light); border: 1.5px solid #e0c990; border-radius: 8px; padding: 9px 16px; font-weight: 500; font-size: 0.9rem; color: #7a5a10; margin-bottom: 18px; }
+  .top-filters { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 500; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot-mat { background: var(--mat); } .dot-por { background: var(--por); } .dot-ing { background: var(--ing); }
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .status-bar { background: var(--paper); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat { display: flex; flex-direction: column; gap: 1px; }
+  .stat-val { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 900; }
+  .stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+  .stat-val.pv { color: var(--present); } .stat-val.av { color: var(--absent); }
+  .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 10px; }
+  .student-card { background: var(--paper); border: 2px solid var(--border); border-radius: 11px; padding: 14px; display: flex; flex-direction: column; gap: 9px; transition: all 0.15s; }
+  .student-card:hover { box-shadow: 0 3px 14px rgba(26,18,8,0.07); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+  .student-name { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; line-height: 1.3; flex: 1; }
+  .disc-badge { font-size: 0.67rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .disc-mat { background: var(--mat-bg); color: var(--mat); } .disc-por { background: var(--por-bg); color: var(--por); }
+  .disc-ing { background: var(--ing-bg); color: var(--ing); } .disc-nd { background: var(--nd-bg); color: var(--nd); }
+  .student-time { font-size: 0.75rem; color: var(--muted); background: var(--bg); border-radius: 5px; padding: 3px 7px; display: inline-block; }
+  .att-btns { display: flex; gap: 7px; }
+  .att-btn { flex: 1; padding: 7px; border-radius: 7px; border: 2px solid transparent; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.13s; }
+  .att-btn.pb { background: var(--present-bg); color: var(--present); border-color: #b5d9bf; }
+  .att-btn.pb:hover, .att-btn.pb.sel { background: var(--present); color: white; border-color: var(--present); }
+  .att-btn.ab { background: var(--absent-bg); color: var(--absent); border-color: #e8b4b4; }
+  .att-btn.ab:hover, .att-btn.ab.sel { background: var(--absent); color: white; border-color: var(--absent); }
+  .empty-msg { text-align: center; padding: 44px; color: var(--muted); font-family: 'Fraunces', serif; font-size: 1.05rem; font-style: italic; }
+  .divider { height: 1px; background: var(--border); margin: 32px 0; }
+  .section-title { font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .section-title::after { content: ''; flex: 1; height: 1.5px; background: var(--border); }
+  .hist-filters { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .month-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .month-card { background: var(--paper); border: 1.5px solid var(--border); border-radius: 10px; padding: 16px; }
+  .month-card h4 { font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; }
+  .mini-bar { display: flex; height: 7px; border-radius: 4px; overflow: hidden; margin-bottom: 7px; background: var(--border); }
+  .mini-bar-fill { background: var(--present); border-radius: 4px; transition: width 0.3s; }
+  .mini-stats { display: flex; gap: 12px; font-size: 0.78rem; }
+  .mini-p { color: var(--present); font-weight: 600; } .mini-a { color: var(--absent); font-weight: 600; }
+  .hist-table-wrap { background: var(--paper); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--ink); color: var(--bg); padding: 11px 14px; text-align: left; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 500; }
+  td { padding: 10px 14px; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+  .badge-p { background: var(--present-bg); color: var(--present); } .badge-a { background: var(--absent-bg); color: var(--absent); }
+  .toast { position: fixed; bottom: 22px; right: 22px; background: var(--ink); color: var(--bg); padding: 11px 18px; border-radius: 9px; font-size: 0.85rem; font-weight: 500; opacity: 0; transform: translateY(8px); transition: all 0.22s; z-index: 999; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  @media (max-width: 600px) { header { padding: 14px 16px; } header h1 { font-size: 1.3rem; } .container { padding: 16px 12px; } .students-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 Chamada</h1>
+  <button class="nav-btn nav-active" id="navChamada" onclick="showScreen('chamada')">Chamada</button>
+  <button class="nav-btn" id="navAlunos" onclick="showScreen('alunos')">Gerenciar Alunos</button>
+</header>
+
+<!-- SCREEN: MANAGE STUDENTS -->
+<div class="screen" id="screenAlunos">
+<div class="container">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px;">
+    <div>
+      <div style="font-family:'Fraunces',serif;font-size:1.5rem;font-weight:900;margin-bottom:2px;">Gerenciar Alunos</div>
+      <div style="font-size:0.82rem;color:var(--muted);">Edite nome, disciplina e horário — ou adicione novos alunos</div>
+    </div>
+  </div>
+  <div class="manage-grid">
+    <!-- LEFT: List -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Alunos cadastrados</h3>
+        <span id="studentCount" style="font-size:0.78rem;color:#b0a090;"></span>
+      </div>
+      <div class="panel-body">
+        <input class="search-input" type="text" id="searchInput" placeholder="Buscar aluno..." oninput="renderStudentList()">
+        <div class="day-filter-tabs" id="dayFilterTabs"></div>
+        <div class="student-list-scroll" id="studentList"></div>
+      </div>
+    </div>
+    <!-- RIGHT: Form -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 id="formTitle">Novo aluno</h3>
+        <button class="nav-btn" style="font-size:0.75rem;padding:4px 10px;" onclick="clearForm()">Limpar</button>
+      </div>
+      <div class="panel-body">
+        <input type="hidden" id="editingKey">
+        <div class="form-field">
+          <label>Nome</label>
+          <input type="text" id="fName" placeholder="Nome completo do aluno">
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Dia da semana</label>
+            <select id="fDay">
+              <option value="Segunda">Segunda</option>
+              <option value="Terça">Terça</option>
+              <option value="Quarta">Quarta</option>
+              <option value="Quinta">Quinta</option>
+              <option value="Sexta">Sexta</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Disciplina</label>
+            <select id="fDisc">
+              <option value="Matemática">Matemática</option>
+              <option value="Português">Português</option>
+              <option value="Inglês">Inglês</option>
+              <option value="N/D">Não definida</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Horário início</label>
+            <select id="fStart"></select>
+          </div>
+          <div class="form-field">
+            <label>Horário fim</label>
+            <select id="fEnd"></select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" style="flex:1" onclick="saveStudent()">💾 Salvar aluno</button>
+          <button class="btn btn-danger" id="btnDelete" style="display:none" onclick="deleteStudent()">Excluir</button>
+        </div>
+        <div id="formMsg" style="margin-top:10px;font-size:0.83rem;display:none;padding:8px 12px;border-radius:7px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- SCREEN: CHAMADA -->
+<div class="screen active" id="screenChamada">
+<div class="container">
+  <div class="controls">
+    <div class="cg"><label>Data da aula</label><input type="date" id="dateInput" onchange="onDateChange()"></div>
+    <button class="btn btn-primary" onclick="saveAll()">💾 Salvar chamada</button>
+    <button class="btn btn-secondary" onclick="clearDay()">🗑 Limpar dia</button>
+  </div>
+  <div class="day-tabs" id="dayTabs"></div>
+  <div class="date-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span id="dateBadgeText">—</span></div>
+
+  <div class="top-filters">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot dot-mat"></div>Matemática</div>
+      <div class="legend-item"><div class="legend-dot dot-por"></div>Português</div>
+      <div class="legend-item"><div class="legend-dot dot-ing"></div>Inglês</div>
+    </div>
+    <div class="filter-row">
+      <div class="cg"><label>Disciplina</label>
+        <select id="filterDisc" onchange="renderStudents()">
+          <option value="">Todas</option>
+          <option value="Matemática">Matemática</option>
+          <option value="Português">Português</option>
+          <option value="Inglês">Inglês</option>
+        </select>
+      </div>
+      <div class="cg"><label>Horário</label>
+        <select id="filterTime" onchange="renderStudents()"><option value="">Todos</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="stat"><span class="stat-val" id="stTotal">0</span><span class="stat-label">Alunos</span></div>
+    <div class="stat"><span class="stat-val pv" id="stPresent">0</span><span class="stat-label">Presentes</span></div>
+    <div class="stat"><span class="stat-val av" id="stAbsent">0</span><span class="stat-label">Ausentes</span></div>
+    <div class="stat"><span class="stat-val" id="stPending" style="color:var(--muted)">0</span><span class="stat-label">Pendentes</span></div>
+  </div>
+
+  <div class="students-grid" id="studentsGrid">
+    <div class="empty-msg" style="grid-column:1/-1">Selecione uma data para ver os alunos do dia.</div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">Histórico de frequência</div>
+  <div class="hist-filters">
+    <div class="cg"><label>Mês</label><select id="histMonth" onchange="renderHistory()"><option value="">Todos os meses</option></select></div>
+    <div class="cg"><label>Aluno</label><select id="histStudent" onchange="renderHistory()"><option value="">Todos os alunos</option></select></div>
+    <div class="cg"><label>Disciplina</label>
+      <select id="histDisc" onchange="renderHistory()">
+        <option value="">Todas</option>
+        <option value="Matemática">Matemática</option>
+        <option value="Português">Português</option>
+        <option value="Inglês">Inglês</option>
+      </select>
+    </div>
+    <div class="cg"><label>Status</label>
+      <select id="histStatus" onchange="renderHistory()">
+        <option value="">Todos</option><option value="P">Presentes</option><option value="F">Faltas</option>
+      </select>
+    </div>
+    <button class="btn btn-secondary" onclick="exportCSV()">⬇ Exportar CSV</button>
+  </div>
+  <div class="month-cards" id="monthSummary"></div>
+  <div class="hist-table-wrap">
+    <table>
+      <thead><tr><th>Data</th><th>Dia</th><th>Aluno</th><th>Disciplina</th><th>Horário</th><th>Status</th><th></th></tr></thead>
+      <tbody id="historyBody"><tr><td colspan="7" class="empty-msg">Nenhum registro ainda.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+</div><!-- end screenChamada -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SCHEDULE = {
+  "Segunda": [
+    {name:"Arthur Mourão",discipline:"Matemática",start:"14:00",end:"14:30"},
+    {name:"Betina",discipline:"Matemática",start:"16:00",end:"16:30"},
+    {name:"Dominic",discipline:"Português",start:"16:00",end:"16:30"},
+    {name:"Enzo",discipline:"N/D",start:"14:00",end:"14:30"},
+    {name:"Francisco",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Giulia",discipline:"Português",start:"16:00",end:"16:30"},
+    {name:"Isabela",discipline:"Português",start:"16:00",end:"16:30"},
+    {name:"João Vitor",discipline:"Matemática",start:"15:00",end:"16:30"},
+    {name:"Júlia Mendes",discipline:"Matemática",start:"14:00",end:"15:30"},
+    {name:"Lais Belchior",discipline:"Inglês",start:"14:00",end:"14:30"},
+    {name:"Lorenzo",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Maria Clara Gatti",discipline:"Matemática",start:"16:00",end:"16:30"},
+    {name:"Matheus Mendes",discipline:"Inglês",start:"14:00",end:"15:30"},
+    {name:"Nina",discipline:"Português",start:"14:00",end:"15:30"},
+    {name:"Pedro Matos",discipline:"Matemática",start:"15:00",end:"15:30"}
+  ],
+  "Terça": [
+    {name:"Alice Soeiro",discipline:"Matemática",start:"17:00",end:"17:30"},
+    {name:"Ana Júlia",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Ana Soeiro",discipline:"Matemática",start:"17:00",end:"17:30"},
+    {name:"Anderson",discipline:"Inglês",start:"09:00",end:"09:30"},
+    {name:"Anne",discipline:"Matemática",start:"15:00",end:"17:00"},
+    {name:"Antônio",discipline:"Matemática",start:"17:00",end:"17:30"},
+    {name:"Arthur Soeiro",discipline:"Inglês",start:"17:00",end:"17:30"},
+    {name:"Bianca",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Catarina",discipline:"Matemática",start:"16:00",end:"17:30"},
+    {name:"Daniella",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Gabriel",discipline:"Matemática",start:"09:00",end:"09:30"},
+    {name:"Gabriel Figueiredo",discipline:"Português",start:"09:30",end:"09:30"},
+    {name:"Helena",discipline:"Matemática",start:"11:00",end:"11:30"},
+    {name:"Henrique",discipline:"Português",start:"10:00",end:"10:00"},
+    {name:"Israel",discipline:"Português",start:"11:00",end:"11:30"},
+    {name:"João Pedro",discipline:"Português",start:"14:00",end:"15:30"},
+    {name:"Lucca",discipline:"Português",start:"16:00",end:"17:30"},
+    {name:"Marco",discipline:"Português",start:"15:00",end:"17:00"},
+    {name:"Maria Clara",discipline:"Inglês",start:"16:00",end:"17:30"},
+    {name:"Matheus Bittencourt",discipline:"Português",start:"11:00",end:"11:30"},
+    {name:"Matheus Mourão",discipline:"Matemática",start:"08:00",end:"08:30"},
+    {name:"Matheus Soares",discipline:"Português",start:"14:00",end:"14:30"},
+    {name:"Miguel Costa",discipline:"Português",start:"09:00",end:"09:30"},
+    {name:"Olivia",discipline:"Matemática",start:"08:00",end:"08:30"},
+    {name:"Olivia Sophie",discipline:"Matemática",start:"14:00",end:"14:30"},
+    {name:"Rafael",discipline:"Português",start:"10:30",end:"11:30"},
+    {name:"Samuel Mansur",discipline:"Português",start:"14:00",end:"15:30"},
+    {name:"Yasmin",discipline:"Matemática",start:"08:00",end:"09:30"}
+  ],
+  "Quarta": [],
+  "Quinta": [
+    {name:"Alice Soeiro",discipline:"Matemática",start:"17:00",end:"17:30"},
+    {name:"Ana Júlia",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Ana Soeiro",discipline:"Matemática",start:"17:00",end:"17:30"},
+    {name:"Anderson",discipline:"Inglês",start:"14:00",end:"14:30"},
+    {name:"Anne",discipline:"Matemática",start:"15:00",end:"17:00"},
+    {name:"Antônio",discipline:"Matemática",start:"17:00",end:"17:30"},
+    {name:"Arthur Mourão",discipline:"Matemática",start:"14:00",end:"14:30"},
+    {name:"Arthur Soeiro",discipline:"Inglês",start:"17:00",end:"17:30"},
+    {name:"Bianca",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Catarina",discipline:"Português",start:"16:00",end:"17:30"},
+    {name:"Enzo",discipline:"N/D",start:"14:00",end:"14:30"},
+    {name:"Gabriel",discipline:"Matemática",start:"09:00",end:"09:30"},
+    {name:"Gabriel Figueiredo",discipline:"Português",start:"09:30",end:"09:30"},
+    {name:"Helena",discipline:"Matemática",start:"11:00",end:"11:30"},
+    {name:"Henrique",discipline:"Português",start:"10:00",end:"10:00"},
+    {name:"Israel",discipline:"Português",start:"11:00",end:"11:30"},
+    {name:"João Vitor",discipline:"Inglês",start:"16:00",end:"17:30"},
+    {name:"Lucca",discipline:"Matemática",start:"16:00",end:"17:30"},
+    {name:"Marco",discipline:"Português",start:"15:00",end:"17:00"},
+    {name:"Mateus Soares",discipline:"Português",start:"14:00",end:"14:30"},
+    {name:"Matheus Bittencourt",discipline:"Português",start:"11:00",end:"11:30"},
+    {name:"Matheus Mourão",discipline:"Matemática",start:"08:00",end:"08:30"},
+    {name:"Miguel Costa",discipline:"Português",start:"09:00",end:"09:30"},
+    {name:"Nina",discipline:"Português",start:"14:00",end:"15:30"},
+    {name:"Olivia",discipline:"Matemática",start:"08:00",end:"08:30"},
+    {name:"Rafael Canela",discipline:"Português",start:"10:30",end:"11:30"},
+    {name:"Samuel Mansur",discipline:"Português",start:"14:00",end:"15:30"},
+    {name:"Yasmin",discipline:"Matemática",start:"08:00",end:"09:30"}
+  ],
+  "Sexta": [
+    {name:"Betina",discipline:"Matemática",start:"16:00",end:"16:30"},
+    {name:"Daniella",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Dominic",discipline:"Português",start:"16:00",end:"16:30"},
+    {name:"Francisco",discipline:"Matemática",start:"14:00",end:"14:30"},
+    {name:"Giulia",discipline:"Português",start:"16:00",end:"16:30"},
+    {name:"Isabela",discipline:"Português",start:"16:00",end:"16:30"},
+    {name:"João Pedro",discipline:"Português",start:"14:00",end:"15:30"},
+    {name:"Julia Mendes",discipline:"Matemática",start:"14:00",end:"15:30"},
+    {name:"Lais Belchior",discipline:"Inglês",start:"14:00",end:"14:30"},
+    {name:"Lorenzo",discipline:"Matemática",start:"15:00",end:"15:30"},
+    {name:"Maria Clara",discipline:"Português",start:"15:00",end:"16:30"},
+    {name:"Maria Clara Gatti",discipline:"Matemática",start:"16:00",end:"16:30"},
+    {name:"Matheus Mendes",discipline:"Inglês",start:"14:00",end:"15:30"},
+    {name:"Olivia Sophie",discipline:"Matemática",start:"14:00",end:"14:30"},
+    {name:"Pedro Matos",discipline:"Matemática",start:"13:00",end:"14:30"}
+  ]
+};
+
+const DAYS_PT = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+const MONTHS_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const DAY_MAP = {1:"Segunda",2:"Terça",3:"Quarta",4:"Quinta",5:"Sexta"};
+
+let currentDay = null, currentDate = null, pendingMarks = {};
+let db = (() => { try { return JSON.parse(localStorage.getItem('chamada_db_v2')||'{}'); } catch { return {}; } })();
+function saveDB() { localStorage.setItem('chamada_db_v2', JSON.stringify(db)); }
+
+window.onload = function() {
+  buildDayTabs();
+  const todayStr = new Date().toISOString().slice(0,10);
+  document.getElementById('dateInput').value = todayStr;
+  applyDate(todayStr);
+  refreshHistoryFilters();
+  renderHistory();
+};
+
+function buildDayTabs() {
+  const tabs = document.getElementById('dayTabs');
+  ["Segunda","Terça","Quarta","Quinta","Sexta"].forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'day-tab'; btn.textContent = d; btn.id = 'tab-'+d;
+    btn.onclick = () => onTabClick(d);
+    tabs.appendChild(btn);
+  });
+}
+
+function onTabClick(day) {
+  const base = currentDate ? new Date(currentDate+'T12:00:00') : new Date();
+  const targetDow = ["Segunda","Terça","Quarta","Quinta","Sexta"].indexOf(day)+1;
+  const diff = targetDow - base.getDay();
+  const nd = new Date(base); nd.setDate(base.getDate()+diff);
+  const ns = nd.toISOString().slice(0,10);
+  document.getElementById('dateInput').value = ns;
+  applyDate(ns);
+}
+
+function onDateChange() {
+  const val = document.getElementById('dateInput').value;
+  if (val) applyDate(val);
+}
+
+function applyDate(dateStr) {
+  currentDate = dateStr;
+  const d = new Date(dateStr+'T12:00:00');
+  const dayIdx = d.getDay();
+  const day = DAY_MAP[dayIdx] || null;
+  const formatted = d.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('dateBadgeText').textContent = formatted.charAt(0).toUpperCase()+formatted.slice(1);
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  if (day) { const tab = document.getElementById('tab-'+day); if(tab) tab.classList.add('active'); }
+  pendingMarks = {};
+  currentDay = day;
+  populateTimeFilter();
+  renderStudents();
+  updateStats();
+}
+
+function populateTimeFilter() {
+  const sel = document.getElementById('filterTime');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  if (!currentDay) return;
+  const slots = [...new Set((SCHEDULE[currentDay]||[]).map(s => s.start === s.end ? s.start : `${s.start}–${s.end}`))].sort();
+  slots.forEach(t => { sel.innerHTML += `<option value="${t}" ${t===prev?'selected':''}>${t}</option>`; });
+}
+
+function renderStudents() {
+  const grid = document.getElementById('studentsGrid');
+  if (!currentDay) {
+    grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Não há aulas neste dia.</div>';
+    updateStats([]); return;
+  }
+  let students = SCHEDULE[currentDay] || [];
+  const df = document.getElementById('filterDisc').value;
+  const tf = document.getElementById('filterTime').value;
+  if (df) students = students.filter(s => s.discipline === df);
+  if (tf) {
+    const [ts, te] = tf.includes('–') ? tf.split('–') : [tf, tf];
+    students = students.filter(s => s.start === ts && s.end === te);
+  }
+  if (!students.length) {
+    grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Nenhum aluno com esses filtros.</div>';
+    updateStats([]); return;
+  }
+  const saved = db[currentDate] || {};
+  grid.innerHTML = '';
+  students.forEach(s => {
+    const status = pendingMarks[s.name] || saved[s.name] || null;
+    const dc = {Matemática:'mat',Português:'por',Inglês:'ing'}[s.discipline]||'nd';
+    const dl = s.discipline === 'N/D' ? '?' : s.discipline;
+    const ts = s.start === s.end ? s.start : `${s.start}–${s.end}`;
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.innerHTML = `<div class="card-top"><div class="student-name">${s.name}</div><span class="disc-badge disc-${dc}">${dl}</span></div><div class="student-time">⏰ ${ts}</div><div class="att-btns"><button class="att-btn pb ${status==='P'?'sel':''}" onclick="mark('${s.name}','P')">✓ Presente</button><button class="att-btn ab ${status==='F'?'sel':''}" onclick="mark('${s.name}','F')">✗ Faltou</button></div>`;
+    grid.appendChild(card);
+  });
+  updateStats(students);
+}
+
+function mark(name, status) {
+  const saved = db[currentDate] || {};
+  if ((pendingMarks[name] || saved[name]) === status) {
+    delete pendingMarks[name];
+    if (saved[name]) { delete saved[name]; db[currentDate] = saved; saveDB(); }
+  } else { pendingMarks[name] = status; }
+  renderStudents();
+}
+
+function updateStats(filtered) {
+  const all = filtered !== undefined ? filtered : (currentDay ? SCHEDULE[currentDay] : []);
+  const saved = db[currentDate] || {};
+  let p=0,f=0,pend=0;
+  all.forEach(s => { const st = pendingMarks[s.name]||saved[s.name]; if(st==='P')p++; else if(st==='F')f++; else pend++; });
+  document.getElementById('stTotal').textContent = all.length;
+  document.getElementById('stPresent').textContent = p;
+  document.getElementById('stAbsent').textContent = f;
+  document.getElementById('stPending').textContent = pend;
+}
+
+function saveAll() {
+  if (!currentDate || !currentDay) { showToast('Selecione uma data primeiro.'); return; }
+  if (!db[currentDate]) db[currentDate] = {};
+  Object.assign(db[currentDate], pendingMarks);
+  pendingMarks = {};
+  saveDB(); renderStudents(); refreshHistoryFilters(); renderHistory();
+  showToast('✓ Chamada salva!');
+}
+
+function clearDay() {
+  if (!currentDate) return;
+  if (!confirm('Apagar todos os registros de '+currentDate+'?')) return;
+  delete db[currentDate]; pendingMarks = {};
+  saveDB(); renderStudents(); renderHistory();
+  showToast('Dia limpo.');
+}
+
+function getStudentInfo(name) {
+  for (const [,students] of Object.entries(SCHEDULE)) { const s = students.find(s=>s.name===name); if(s) return s; }
+  return null;
+}
+
+function refreshHistoryFilters() {
+  const ms = document.getElementById('histMonth'), ss = document.getElementById('histStudent');
+  const months = new Set(), students = new Set();
+  Object.entries(db).forEach(([date,records]) => {
+    const d = new Date(date+'T12:00:00');
+    months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    Object.keys(records).forEach(n => students.add(n));
+  });
+  const cm = ms.value;
+  ms.innerHTML = '<option value="">Todos os meses</option>';
+  [...months].sort().reverse().forEach(m => { const [y,mo]=m.split('-'); ms.innerHTML+=`<option value="${m}" ${m===cm?'selected':''}>${MONTHS_PT[parseInt(mo)-1]} ${y}</option>`; });
+  const cs = ss.value;
+  ss.innerHTML = '<option value="">Todos os alunos</option>';
+  [...students].sort().forEach(n => { ss.innerHTML+=`<option value="${n}" ${n===cs?'selected':''}>${n}</option>`; });
+}
+
+function renderHistory() {
+  const mf=document.getElementById('histMonth').value, sf=document.getElementById('histStudent').value;
+  const df=document.getElementById('histDisc').value, stf=document.getElementById('histStatus').value;
+  const rows=[];
+  Object.entries(db).forEach(([date,records]) => {
+    const d=new Date(date+'T12:00:00');
+    const mk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(mf&&mk!==mf) return;
+    const dayName=DAYS_PT[d.getDay()];
+    Object.entries(records).forEach(([name,status]) => {
+      if(sf&&name!==sf) return; if(stf&&status!==stf) return;
+      const info=getStudentInfo(name);
+      if(df&&(!info||info.discipline!==df)) return;
+      rows.push({date,d,dayName,name,status,info});
+    });
+  });
+  rows.sort((a,b)=>b.date.localeCompare(a.date));
+  renderMonthSummary(mf);
+  const tbody=document.getElementById('historyBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="empty-msg">Nenhum registro encontrado.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const disc=r.info?r.info.discipline:'—';
+    const time=r.info?(r.info.start===r.info.end?r.info.start:`${r.info.start}–${r.info.end}`):'—';
+    const dc={Matemática:'mat',Português:'por',Inglês:'ing'}[disc]||'nd';
+    return `<tr><td>${r.d.toLocaleDateString('pt-BR')}</td><td>${r.dayName}</td><td><strong>${r.name}</strong></td><td><span class="disc-badge disc-${dc}">${disc}</span></td><td>${time}</td><td><span class="badge badge-${r.status==='P'?'p':'a'}">${r.status==='P'?'✓ Presente':'✗ Faltou'}</span></td><td><button class="btn btn-danger" onclick="deleteRecord('${r.date}','${r.name}')">✕</button></td></tr>`;
+  }).join('');
+}
+
+function renderMonthSummary(mf) {
+  const summary={};
+  Object.entries(db).forEach(([date,records]) => {
+    const d=new Date(date+'T12:00:00');
+    const mk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(mf&&mk!==mf) return;
+    if(!summary[mk]) summary[mk]={p:0,f:0};
+    Object.values(records).forEach(s=>{if(s==='P')summary[mk].p++;else if(s==='F')summary[mk].f++;});
+  });
+  const keys=Object.keys(summary).sort().reverse().slice(0,6);
+  const c=document.getElementById('monthSummary');
+  if(!keys.length){c.innerHTML='';return;}
+  c.innerHTML=keys.map(mk=>{
+    const [y,mo]=mk.split('-');const{p,f}=summary[mk];const total=p+f;const pct=total?Math.round(p/total*100):0;
+    return `<div class="month-card"><h4>${MONTHS_PT[parseInt(mo)-1]} ${y}</h4><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%"></div></div><div class="mini-stats"><span class="mini-p">✓ ${p} presentes</span><span class="mini-a">✗ ${f} faltas</span></div></div>`;
+  }).join('');
+}
+
+function deleteRecord(date,name) {
+  if(!db[date]) return; delete db[date][name];
+  if(!Object.keys(db[date]).length) delete db[date];
+  saveDB(); renderStudents(); renderHistory(); refreshHistoryFilters();
+  showToast('Registro removido.');
+}
+
+function exportCSV() {
+  const mf=document.getElementById('histMonth').value,sf=document.getElementById('histStudent').value;
+  const df=document.getElementById('histDisc').value,stf=document.getElementById('histStatus').value;
+  const rows=[['Data','Dia da Semana','Aluno','Disciplina','Horário','Status']];
+  Object.entries(db).forEach(([date,records]) => {
+    const d=new Date(date+'T12:00:00');
+    const mk=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(mf&&mk!==mf) return;
+    const dayName=DAYS_PT[d.getDay()];
+    Object.entries(records).forEach(([name,status]) => {
+      if(sf&&name!==sf) return; if(stf&&status!==stf) return;
+      const info=getStudentInfo(name);
+      if(df&&(!info||info.discipline!==df)) return;
+      const disc=info?info.discipline:'—';
+      const time=info?(info.start===info.end?info.start:`${info.start}–${info.end}`):'—';
+      rows.push([d.toLocaleDateString('pt-BR'),dayName,name,disc,time,status==='P'?'Presente':'Faltou']);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='chamada.csv';a.click();URL.revokeObjectURL(url);
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===================== SCREEN NAV =====================
+function showScreen(name) {
+  document.getElementById('screenChamada').classList.toggle('active', name==='chamada');
+  document.getElementById('screenAlunos').classList.toggle('active', name==='alunos');
+  document.getElementById('navChamada').classList.toggle('nav-active', name==='chamada');
+  document.getElementById('navAlunos').classList.toggle('nav-active', name==='alunos');
+  if (name==='alunos') initManageScreen();
+}
+
+// ===================== MANAGE SCREEN =====================
+const TIME_SLOTS = ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30'];
+let manageDayFilter = '';
+let selectedStudentKey = null;
+
+function initManageScreen() {
+  buildDayFilterTabs();
+  populateTimeSelects();
+  renderStudentList();
+  clearForm();
+}
+
+function buildDayFilterTabs() {
+  const c = document.getElementById('dayFilterTabs');
+  if (c.children.length > 0) return;
+  const days = ['','Segunda','Terça','Quarta','Quinta','Sexta'];
+  const labels = ['Todos','Seg','Ter','Qua','Qui','Sex'];
+  days.forEach((d,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'dft' + (d===''?' active':'');
+    btn.textContent = labels[i];
+    btn.onclick = () => { manageDayFilter = d; document.querySelectorAll('.dft').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderStudentList(); };
+    c.appendChild(btn);
+  });
+}
+
+function populateTimeSelects() {
+  ['fStart','fEnd'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = TIME_SLOTS.map(t=>`<option value="${t}">${t}</option>`).join('');
+  });
+  document.getElementById('fStart').value = '14:00';
+  document.getElementById('fEnd').value = '15:00';
+}
+
+function getStudentKey(name, day) { return `${day}::${name}`; }
+
+function getAllStudents() {
+  // Returns flat list: {key, name, day, discipline, start, end}
+  const list = [];
+  Object.entries(SCHEDULE).forEach(([day, students]) => {
+    students.forEach(s => {
+      list.push({ key: getStudentKey(s.name, day), name: s.name, day, discipline: s.discipline, start: s.start, end: s.end });
+    });
+  });
+  return list;
+}
+
+function renderStudentList() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  let students = getAllStudents();
+  if (manageDayFilter) students = students.filter(s => s.day === manageDayFilter);
+  if (query) students = students.filter(s => s.name.toLowerCase().includes(query));
+  students.sort((a,b) => a.name.localeCompare(b.name,'pt'));
+
+  document.getElementById('studentCount').textContent = `${students.length} alunos`;
+  const list = document.getElementById('studentList');
+  if (!students.length) { list.innerHTML = '<div class="empty-list">Nenhum aluno encontrado.</div>'; return; }
+  const dc = {Matemática:'mat',Português:'por',Inglês:'ing',};
+  list.innerHTML = students.map(s => {
+    const sel = s.key === selectedStudentKey ? 'selected' : '';
+    const bc = dc[s.discipline] || 'nd';
+    const ts = s.start === s.end ? s.start : `${s.start}–${s.end}`;
+    return `<div class="student-list-item ${sel}" onclick="selectStudent('${s.key.replace(/'/g,"\\'")}')">
+      <div style="flex:1;min-width:0">
+        <div class="sli-name">${s.name}</div>
+        <div style="display:flex;gap:6px;margin-top:3px;align-items:center;">
+          <span class="sli-day">${s.day}</span>
+          <span class="sli-time">⏰ ${ts}</span>
+        </div>
+      </div>
+      <span class="sli-disc disc-${bc}">${s.discipline==='N/D'?'?':s.discipline}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectStudent(key) {
+  selectedStudentKey = key;
+  const all = getAllStudents();
+  const s = all.find(x => x.key === key);
+  if (!s) return;
+  document.getElementById('editingKey').value = key;
+  document.getElementById('fName').value = s.name;
+  document.getElementById('fDay').value = s.day;
+  document.getElementById('fDisc').value = s.discipline;
+  document.getElementById('fStart').value = s.start;
+  document.getElementById('fEnd').value = s.end;
+  document.getElementById('formTitle').textContent = 'Editar aluno';
+  document.getElementById('btnDelete').style.display = 'inline-block';
+  hideFormMsg();
+  renderStudentList();
+}
+
+function clearForm() {
+  selectedStudentKey = null;
+  document.getElementById('editingKey').value = '';
+  document.getElementById('fName').value = '';
+  document.getElementById('fDay').value = 'Segunda';
+  document.getElementById('fDisc').value = 'Matemática';
+  document.getElementById('fStart').value = '14:00';
+  document.getElementById('fEnd').value = '15:00';
+  document.getElementById('formTitle').textContent = 'Novo aluno';
+  document.getElementById('btnDelete').style.display = 'none';
+  hideFormMsg();
+  renderStudentList();
+}
+
+function saveStudent() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { showFormMsg('Digite o nome do aluno.', 'error'); return; }
+  const day = document.getElementById('fDay').value;
+  const disc = document.getElementById('fDisc').value;
+  const start = document.getElementById('fStart').value;
+  const end = document.getElementById('fEnd').value;
+  if (start > end) { showFormMsg('O horário de início deve ser antes do fim.', 'error'); return; }
+
+  const editKey = document.getElementById('editingKey').value;
+
+  if (editKey) {
+    // Edit existing: find and update in SCHEDULE
+    const [editDay, editName] = editKey.split('::');
+    const arr = SCHEDULE[editDay];
+    const idx = arr.findIndex(s => s.name === editName);
+    if (idx !== -1) {
+      if (editDay !== day) {
+        // Moving to different day
+        arr.splice(idx, 1);
+        SCHEDULE[day].push({name, discipline: disc, start, end});
+      } else {
+        arr[idx] = {name, discipline: disc, start, end};
+      }
+    }
+    showFormMsg('Aluno atualizado com sucesso!', 'success');
+    selectedStudentKey = getStudentKey(name, day);
+    document.getElementById('editingKey').value = selectedStudentKey;
+  } else {
+    SCHEDULE[day].push({name, discipline: disc, start, end});
+    showFormMsg('Aluno adicionado!', 'success');
+    selectedStudentKey = getStudentKey(name, day);
+    document.getElementById('editingKey').value = selectedStudentKey;
+    document.getElementById('formTitle').textContent = 'Editar aluno';
+    document.getElementById('btnDelete').style.display = 'inline-block';
+  }
+
+  renderStudentList();
+  // Refresh chamada if visible
+  if (currentDay) { populateTimeFilter(); renderStudents(); updateStats(); }
+  showToast('✓ Aluno salvo!');
+}
+
+function deleteStudent() {
+  const key = document.getElementById('editingKey').value;
+  if (!key) return;
+  const [day, name] = key.split('::');
+  if (!confirm(`Excluir ${name} de ${day}?`)) return;
+  const arr = SCHEDULE[day];
+  const idx = arr.findIndex(s => s.name === name);
+  if (idx !== -1) arr.splice(idx, 1);
+  clearForm();
+  renderStudentList();
+  if (currentDay) { populateTimeFilter(); renderStudents(); updateStats(); }
+  showToast('Aluno excluído.');
+}
+
+function showFormMsg(msg, type) {
+  const el = document.getElementById('formMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type==='error' ? 'var(--absent-bg)' : 'var(--present-bg)';
+  el.style.color = type==='error' ? 'var(--absent)' : 'var(--present)';
+  el.style.border = `1px solid ${type==='error'?'#e8b4b4':'#b5d9bf'}`;
+}
+function hideFormMsg() { document.getElementById('formMsg').style.display = 'none'; }
+</script>
+</body>
+</html>
